@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .section {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .alert-summary {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .alert-box {
+            text-align: center;
+            padding: 15px;
+            border-radius: 5px;
+            flex: 1;
+            margin: 0 10px;
+        }
+        .critical { background-color: #e74c3c; color: white; }
+        .warning { background-color: #f39c12; color: white; }
+        .info { background-color: #3498db; color: white; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f5f6fa;
+        }
+        .chart {
+            width: 100%;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+    </style>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>ContainerEye Daily Report</h1>
+        <p>Period: {{.StartTime.Format "2006-01-02 15:04:05"}} to {{.EndTime.Format "2006-01-02 15:04:05"}}</p>
+    </div>
+
+    <div class="section">
+        <h2>Alert Summary</h2>
+        <div class="alert-summary">
+            <div class="alert-box critical">
+                <h3>Critical</h3>
+                <p>{{.AlertSummary.CriticalAlerts}}</p>
+            </div>
+            <div class="alert-box warning">
+                <h3>Warning</h3>
+                <p>{{.AlertSummary.WarningAlerts}}</p>
+            </div>
+            <div class="alert-box info">
+                <h3>Info</h3>
+                <p>{{.AlertSummary.InfoAlerts}}</p>
+            </div>
+        </div>
+
+        <h3>Top Alert Rules</h3>
+        <table>
+            <tr>
+                <th>Rule</th>
+                <th>Level</th>
+                <th>Alert Count</th>
+                <th>Top Affected Containers</th>
+            </tr>
+            {{range .AlertSummary.TopRules}}
+            <tr>
+                <td>{{.RuleName}}</td>
+                <td>{{.Level}}</td>
+                <td>{{.AlertCount}}</td>
+                <td>{{range .TopTargets}}{{.}}, {{end}}</td>
+            </tr>
+            {{end}}
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Top Resource-Intensive Containers</h2>
+        <table>
+            <tr>
+                <th>Container</th>
+                <th>CPU Avg (%)</th>
+                <th>Memory Avg (%)</th>
+                <th>Disk Avg (%)</th>
+                <th>Network Avg (MB/s)</th>
+                <th>Alert Count</th>
+            </tr>
+            {{range .TopContainers}}
+            <tr>
+                <td>{{.ContainerName}}</td>
+                <td>{{printf "%.2f" .CpuAvg}}</td>
+                <td>{{printf "%.2f" .MemAvg}}</td>
+                <td>{{printf "%.2f" .DiskAvg}}</td>
+                <td>{{printf "%.2f" .NetAvg}}</td>
+                <td>{{.AlertCount}}</td>
+            </tr>
+            {{end}}
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Resource Usage Trends</h2>
+        <div id="cpuChart" class="chart"></div>
+        <div id="memoryChart" class="chart"></div>
+        <div id="diskChart" class="chart"></div>
+        <div id="networkChart" class="chart"></div>
+    </div>
+
+    <script>
+        // CPU Usage Trend
+        var cpuData = {
+            x: [{{range .Trends.CpuTrend}}"{{.Timestamp.Format "2006-01-02 15:04:05"}}", {{end}}],
+            y: [{{range .Trends.CpuTrend}}{{.Value}}, {{end}}],
+            type: 'scatter',
+            name: 'CPU Usage (%)'
+        };
+        Plotly.newPlot('cpuChart', [cpuData], {
+            title: 'CPU Usage Trend',
+            xaxis: { title: 'Time' },
+            yaxis: { title: 'Usage (%)' }
+        });
+
+        // Memory Usage Trend
+        var memData = {
+            x: [{{range .Trends.MemoryTrend}}"{{.Timestamp.Format "2006-01-02 15:04:05"}}", {{end}}],
+            y: [{{range .Trends.MemoryTrend}}{{.Value}}, {{end}}],
+            type: 'scatter',
+            name: 'Memory Usage (%)'
+        };
+        Plotly.newPlot('memoryChart', [memData], {
+            title: 'Memory Usage Trend',
+            xaxis: { title: 'Time' },
+            yaxis: { title: 'Usage (%)' }
+        });
+
+        // Disk Usage Trend
+        var diskData = {
+            x: [{{range .Trends.DiskTrend}}"{{.Timestamp.Format "2006-01-02 15:04:05"}}", {{end}}],
+            y: [{{range .Trends.DiskTrend}}{{.Value}}, {{end}}],
+            type: 'scatter',
+            name: 'Disk Usage (%)'
+        };
+        Plotly.newPlot('diskChart', [diskData], {
+            title: 'Disk Usage Trend',
+            xaxis: { title: 'Time' },
+            yaxis: { title: 'Usage (%)' }
+        });
+
+        // Network Usage Trend
+        var netData = {
+            x: [{{range .Trends.NetTrend}}"{{.Timestamp.Format "2006-01-02 15:04:05"}}", {{end}}],
+            y: [{{range .Trends.NetTrend}}{{.Value}}, {{end}}],
+            type: 'scatter',
+            name: 'Network Usage (MB/s)'
+        };
+        Plotly.newPlot('networkChart', [netData], {
+            title: 'Network Usage Trend',
+            xaxis: { title: 'Time' },
+            yaxis: { title: 'Usage (MB/s)' }
+        });
+    </script>
+</body>
+</html>

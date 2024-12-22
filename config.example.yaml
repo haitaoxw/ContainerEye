@@ -1,0 +1,57 @@
+server:
+  host: "0.0.0.0"
+  port: 8080
+  debug: false
+
+database:
+  driver: "sqlite3"
+  dsn: "containereye.db"
+
+monitor:
+  interval: "30s"
+  batch_size: 100
+  max_concurrent: 10
+  retry_attempts: 3
+  retry_delay: "5s"
+
+alert:
+  default_cooldown: "5m"
+  escalation_enabled: true
+  handlers:
+    - name: "default"
+      type: "email"
+      config:
+        smtp_host: "smtp.example.com"
+        smtp_port: 587
+        smtp_user: "alerts@example.com"
+        smtp_password: "your-password"
+        from: "ContainerEye Alerts <alerts@example.com>"
+        to: ["admin@example.com"]
+    - name: "slack"
+      type: "slack"
+      config:
+        webhook_url: "https://hooks.slack.com/services/your/webhook/url"
+        channel: "#alerts"
+        username: "ContainerEye"
+
+report:
+  templates_dir: "templates"
+  handlers:
+    - name: "default"
+      type: "email"
+      config:
+        smtp_host: "smtp.example.com"
+        smtp_port: 587
+        smtp_user: "reports@example.com"
+        smtp_password: "your-password"
+        from: "ContainerEye Reports <reports@example.com>"
+        to: ["admin@example.com"]
+
+auth:
+  jwt_secret: "your-jwt-secret"
+  token_expiry: "24h"
+
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout"
