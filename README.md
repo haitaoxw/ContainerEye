@@ -23,8 +23,8 @@ ContainerEye is a powerful container monitoring and alerting tool that provides 
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/containereye.git
-cd containereye
+git clone https://github.com/haitaoxw/ContainerEye.git
+cd ContainerEye
 
 # Build the server
 go build -o bin/containereye-server.exe ./cmd/main.go
