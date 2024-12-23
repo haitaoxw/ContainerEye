@@ -9,16 +9,18 @@ import (
 // Container represents a Docker container
 type Container struct {
 	gorm.Model
-	ContainerID   string `gorm:"uniqueIndex"`
-	Name          string
-	Image         string
-	State         string
-	Status        string
-	Created       time.Time
-	LastSeen      time.Time
-	RestartCount  int
-	LastStats     ContainerStats `gorm:"foreignKey:ContainerID;references:ContainerID"`
-	StatsHistory  []ContainerStats
+	ContainerID   string `gorm:"uniqueIndex" json:"id"`
+	Name          string `json:"name"`
+	Image         string `json:"image"`
+	State         string `json:"state"`
+	Status        string `json:"status"`
+	Created       time.Time `json:"created"`
+	LastSeen      time.Time `json:"last_seen"`
+	RestartCount  int `json:"restart_count"`
+	CPUPercent    float64 `json:"cpu_percent"`
+	MemPercent    float64 `json:"mem_percent"`
+	LastStats     ContainerStats `gorm:"foreignKey:ContainerID;references:ContainerID" json:"last_stats"`
+	StatsHistory  []ContainerStats `json:"stats_history"`
 }
 
 // ContainerStats represents container resource usage statistics

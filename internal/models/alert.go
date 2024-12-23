@@ -25,6 +25,7 @@ const (
 type Alert struct {
 	gorm.Model
 	RuleID          uint        `json:"rule_id"`
+	RuleName        string      `json:"rule_name"`
 	ContainerID     string      `json:"container_id"`
 	ContainerName   string      `json:"container_name"`
 	Metric          string      `json:"metric"`
@@ -34,6 +35,7 @@ type Alert struct {
 	Message         string      `json:"message"`
 	Status          AlertStatus `json:"status"`
 	StartTime       time.Time   `json:"start_time"`
+	EndTime         time.Time   `json:"end_time"`
 	Value           float64     `json:"value"`
 	AcknowledgedBy  string      `json:"acknowledged_by,omitempty"`
 	AcknowledgedAt  time.Time   `json:"acknowledged_at,omitempty"`

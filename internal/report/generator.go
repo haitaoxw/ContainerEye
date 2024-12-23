@@ -9,11 +9,11 @@ import (
 	
 	"github.com/jordan-wright/email"
 	"containereye/internal/models"
-	"containereye/internal/database"
+	"gorm.io/gorm"
 )
 
 type ReportGenerator struct {
-	db        *database.DB
+	db        *gorm.DB
 	templates map[string]*template.Template
 }
 
@@ -62,7 +62,7 @@ type TimeSeriesPoint struct {
 	Value     float64
 }
 
-func NewReportGenerator(db *database.DB) (*ReportGenerator, error) {
+func NewReportGenerator(db *gorm.DB) (*ReportGenerator, error) {
 	templates := make(map[string]*template.Template)
 	
 	// Load HTML templates
@@ -180,7 +180,7 @@ func (g *ReportGenerator) processAlerts(alerts []models.Alert) AlertSummary {
 			ruleAlerts[alert.RuleName] = &RuleSummary{
 				RuleName:   alert.RuleName,
 				AlertCount: 1,
-				Level:      alert.Level,
+				Level:      string(alert.Level),
 				TopTargets: []string{alert.ContainerName},
 			}
 		}
@@ -208,17 +208,17 @@ func (g *ReportGenerator) processContainerStats(stats []models.ContainerStats) [
 	for _, stat := range stats {
 		if cs, ok := containers[stat.ContainerID]; ok {
 			cs.CpuAvg += stat.CPUUsage
-			cs.MemAvg += stat.MemoryUsage
-			cs.DiskAvg += stat.DiskUsage
-			cs.NetAvg += stat.NetworkUsage
+			cs.MemAvg += float64(stat.MemoryUsage)
+			cs.DiskAvg += float64(stat.DiskIOTotal)
+			cs.NetAvg += float64(stat.NetworkTotal)
 		} else {
 			containers[stat.ContainerID] = &ContainerSummary{
 				ContainerID:   stat.ContainerID,
 				ContainerName: stat.ContainerName,
 				CpuAvg:       stat.CPUUsage,
-				MemAvg:       stat.MemoryUsage,
-				DiskAvg:      stat.DiskUsage,
-				NetAvg:       stat.NetworkUsage,
+				MemAvg:       float64(stat.MemoryUsage),
+				DiskAvg:      float64(stat.DiskIOTotal),
+				NetAvg:       float64(stat.NetworkTotal),
 			}
 		}
 	}
@@ -267,9 +267,9 @@ func (g *ReportGenerator) calculateTrends(stats []models.ContainerStats) TrendDa
 		rounded := stat.Timestamp.Truncate(time.Hour)
 		point := timePoints[rounded]
 		point.cpu += stat.CPUUsage
-		point.mem += stat.MemoryUsage
-		point.disk += stat.DiskUsage
-		point.net += stat.NetworkUsage
+		point.mem += float64(stat.MemoryUsage)
+		point.disk += float64(stat.DiskIOTotal)
+		point.net += float64(stat.NetworkTotal)
 		point.count++
 		timePoints[rounded] = point
 	}

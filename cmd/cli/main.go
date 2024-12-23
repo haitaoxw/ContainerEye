@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/containereye/internal/cli/commands"
+	"containereye/internal/cli/commands"
 	"github.com/spf13/cobra"
 )
 

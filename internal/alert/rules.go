@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/containereye/internal/models"
+	"containereye/internal/models"
 	"gorm.io/gorm"
 )
 

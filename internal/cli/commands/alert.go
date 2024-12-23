@@ -6,7 +6,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/containereye/internal/api/client"
+	"containereye/internal/api/client"
 	"github.com/spf13/cobra"
 )
 

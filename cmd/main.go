@@ -4,12 +4,12 @@ import (
 	"log"
 	"time"
 
-	"github.com/containereye/internal/api"
-	"github.com/containereye/internal/monitor"
-	"github.com/containereye/internal/alert"
-	"github.com/containereye/internal/config"
-	"github.com/containereye/internal/database"
-	"github.com/containereye/internal/models"
+	"containereye/internal/api"
+	"containereye/internal/monitor"
+	"containereye/internal/alert"
+	"containereye/internal/config"
+	"containereye/internal/database"
+	"containereye/internal/models"
 )
 
 func main() {

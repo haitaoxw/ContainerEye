@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/containereye/internal/database"
-	"github.com/containereye/internal/models"
+	"containereye/internal/database"
+	"containereye/internal/models"
 	"github.com/slack-go/slack"
 	"gopkg.in/gomail.v2"
 	"gorm.io/gorm"

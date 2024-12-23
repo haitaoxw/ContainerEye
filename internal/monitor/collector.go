@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/containereye/internal/alert"
-	"github.com/containereye/internal/database"
-	"github.com/containereye/internal/models"
+	"containereye/internal/alert"
+	"containereye/internal/database"
+	"containereye/internal/models"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"

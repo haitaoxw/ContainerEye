@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"time"
 	
-	"github.com/containereye/internal/alert"
-	"github.com/containereye/internal/auth"
-	"github.com/containereye/internal/database"
-	"github.com/containereye/internal/models"
-	"github.com/containereye/internal/monitor"
+	"containereye/internal/alert"
+	"containereye/internal/auth"
+	"containereye/internal/database"
+	"containereye/internal/models"
+	"containereye/internal/monitor"
 	
 	"github.com/gin-gonic/gin"
 )

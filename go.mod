@@ -1,4 +1,4 @@
-module github.com/containereye
+module containereye
 
 go 1.21
 

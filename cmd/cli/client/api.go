@@ -7,10 +7,36 @@ import (
 	"io"
 	"net/http"
 	"time"
-	
+
 	"github.com/spf13/viper"
 	"containereye/internal/models"
 )
+
+// Container represents a Docker container
+type Container struct {
+	ID      string    `json:"id"`
+	Name    string    `json:"name"`
+	Image   string    `json:"image"`
+	Status  string    `json:"status"`
+	Created time.Time `json:"created"`
+}
+
+// ContainerStats represents container resource usage statistics
+type ContainerStats struct {
+	CPUUsage    float64 `json:"cpu_usage"`
+	MemoryUsage uint64  `json:"memory_usage"`
+	DiskIO      uint64  `json:"disk_io"`
+	NetworkIO   uint64  `json:"network_io"`
+}
+
+// Alert represents a container alert
+type Alert struct {
+	ID        string    `json:"id"`
+	Container string    `json:"container"`
+	Message   string    `json:"message"`
+	Level     string    `json:"level"`
+	Time      time.Time `json:"time"`
+}
 
 type APIClient struct {
 	baseURL    string
@@ -70,7 +96,7 @@ func (c *APIClient) Login(username, password string) (string, error) {
 		"username": username,
 		"password": password,
 	}
-	
+
 	resp, err := c.doRequest("POST", "/api/v1/auth/login", body)
 	if err != nil {
 		return "", err
@@ -152,7 +178,7 @@ func (c *APIClient) ListRules(enabled *bool) ([]models.AlertRule, error) {
 
 func (c *APIClient) GetRule(id uint) (*models.AlertRule, error) {
 	url := fmt.Sprintf("%s/api/v1/rules/%d", c.baseURL, id)
-	
+
 	var rule models.AlertRule
 	resp, err := c.doRequest("GET", url, nil)
 	if err != nil {
@@ -208,7 +234,7 @@ func (c *APIClient) ImportRules(rules []models.AlertRule) error {
 
 func (c *APIClient) ExportRules() ([]models.AlertRule, error) {
 	url := fmt.Sprintf("%s/api/v1/rules/export", c.baseURL)
-	
+
 	var rules []models.AlertRule
 	resp, err := c.doRequest("GET", url, nil)
 	if err != nil {
@@ -218,4 +244,68 @@ func (c *APIClient) ExportRules() ([]models.AlertRule, error) {
 		return nil, err
 	}
 	return rules, nil
+}
+
+func (c *APIClient) TestRule(rule *models.AlertRule) ([]models.Alert, error) {
+	body, err := json.Marshal(rule)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := c.doRequest("POST", "/api/rules/test", body)
+	if err != nil {
+		return nil, err
+	}
+
+	var alerts []models.Alert
+	if err := json.Unmarshal(data, &alerts); err != nil {
+		return nil, err
+	}
+
+	return alerts, nil
+}
+
+func (c *APIClient) GenerateReport(reportType string, startTime, endTime time.Time) error {
+	params := map[string]interface{}{
+		"type":       reportType,
+		"start_time": startTime,
+		"end_time":   endTime,
+	}
+
+	body, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.doRequest("POST", "/api/reports/generate", body)
+	return err
+}
+
+func (c *APIClient) ScheduleReport(schedule *models.ReportSchedule) error {
+	body, err := json.Marshal(schedule)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.doRequest("POST", "/api/reports/schedule", body)
+	return err
+}
+
+func (c *APIClient) ListScheduledReports() ([]models.ReportSchedule, error) {
+	data, err := c.doRequest("GET", "/api/reports/schedule", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var schedules []models.ReportSchedule
+	if err := json.Unmarshal(data, &schedules); err != nil {
+		return nil, err
+	}
+
+	return schedules, nil
+}
+
+func (c *APIClient) DeleteScheduledReport(id string) error {
+	_, err := c.doRequest("DELETE", fmt.Sprintf("/api/reports/schedule/%s", id), nil)
+	return err
 }

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containereye/internal/database"
-	"github.com/containereye/internal/models"
+	"containereye/internal/database"
+	"containereye/internal/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"

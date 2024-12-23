@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/containereye/internal/models"
+	"containereye/internal/models"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )

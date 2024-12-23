@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -13,7 +12,19 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"containereye/internal/models"
+	"containereye/cmd/cli/client"
 )
+
+var apiClient *client.APIClient
+
+// Container represents a Docker container
+type Container = models.Container
+
+// ContainerStats represents container resource usage statistics
+type ContainerStats = models.ContainerStats
+
+// Alert represents a container alert
+type Alert = models.Alert
 
 var loginCmd = &cobra.Command{
 	Use:   "login",
@@ -49,7 +60,7 @@ var containerCmd = &cobra.Command{
 		fmt.Fprintln(w, "ID\tNAME\tSTATUS\tCPU %\tMEM %\t")
 		for _, c := range containers {
 			fmt.Fprintf(w, "%s\t%s\t%s\t%.2f\t%.2f\t\n",
-				c.ID[:12], c.Name, c.Status, c.CPUPercent, c.MemPercent)
+				c.ContainerID, c.Name, c.Status, c.CPUPercent, c.MemPercent)
 		}
 		w.Flush()
 	},
@@ -320,25 +331,23 @@ func addRuleCommands(rootCmd *cobra.Command) {
 				request.EndTime = &et
 			}
 
-			resp, err := apiClient.TestRule(&request)
+			resp, err := apiClient.TestRule(&request.Rule)
 			if err != nil {
 				return err
 			}
 
 			// Print test results
-			fmt.Printf("\nTest Results for Rule: %s\n", rule.Name)
-			fmt.Printf("Duration: %s\n", resp.Summary.TestDuration)
-			fmt.Printf("Total Alerts: %d\n", resp.Summary.TotalAlerts)
-			fmt.Printf("Alerts per Hour: %.2f\n\n", resp.Summary.AlertsPerHour)
+			fmt.Printf("\nTest Results for Rule: %s\n", request.Rule.Name)
+			fmt.Printf("Total Alerts: %d\n\n", len(resp))
 
-			if len(resp.Alerts) > 0 {
+			if len(resp) > 0 {
 				fmt.Println("Alert Details:")
 				fmt.Println(strings.Repeat("-", 80))
-				for _, alert := range resp.Alerts {
+				for _, alert := range resp {
 					fmt.Printf("Container: %s\n", alert.ContainerName)
 					fmt.Printf("Level: %s\n", alert.Level)
 					fmt.Printf("Message: %s\n", alert.Message)
-					fmt.Printf("Period: %s - %s\n", alert.StartTime.Format(time.RFC3339), alert.EndTime.Format(time.RFC3339))
+					fmt.Printf("Time: %s\n", alert.StartTime.Format(time.RFC3339))
 					fmt.Println(strings.Repeat("-", 80))
 				}
 			} else {
@@ -400,6 +409,34 @@ func printRule(rule *models.AlertRule) {
 	fmt.Printf("Updated At:  %s\n", rule.UpdatedAt.Format(time.RFC3339))
 }
 
+func printContainerStats(stats *ContainerStats) {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	fmt.Fprintln(w, "METRIC\tVALUE")
+	fmt.Fprintf(w, "CPU Usage\t%.2f%%\n", stats.CPUPercent)
+	fmt.Fprintf(w, "Memory Usage\t%s\n", formatBytes(stats.MemoryUsage))
+	fmt.Fprintf(w, "Memory Limit\t%s\n", formatBytes(stats.MemoryLimit))
+	fmt.Fprintf(w, "Memory Usage\t%.2f%%\n", stats.MemoryPercent)
+	fmt.Fprintf(w, "Network RX\t%s\n", formatBytes(stats.NetworkRx))
+	fmt.Fprintf(w, "Network TX\t%s\n", formatBytes(stats.NetworkTx))
+	fmt.Fprintf(w, "Block Read\t%s\n", formatBytes(stats.BlockRead))
+	fmt.Fprintf(w, "Block Write\t%s\n", formatBytes(stats.BlockWrite))
+	fmt.Fprintf(w, "PIDs\t%d\n", stats.PIDs)
+	w.Flush()
+}
+
+func formatBytes(bytes uint64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	div, exp := uint64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %ciB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
 // Report generation commands
 var reportCmd = &cobra.Command{
 	Use:   "report",
@@ -413,9 +450,7 @@ var generateReportCmd = &cobra.Command{
 		reportType, _ := cmd.Flags().GetString("type")
 		startTime, _ := cmd.Flags().GetString("start")
 		endTime, _ := cmd.Flags().GetString("end")
-		email, _ := cmd.Flags().GetString("email")
 		
-		// Parse time strings
 		st, err := time.Parse(time.RFC3339, startTime)
 		if err != nil {
 			return fmt.Errorf("invalid start time: %v", err)
@@ -427,12 +462,12 @@ var generateReportCmd = &cobra.Command{
 		}
 		
 		// Generate and send report
-		err = apiClient.GenerateReport(reportType, st, et, email)
+		err = apiClient.GenerateReport(reportType, st, et)
 		if err != nil {
 			return fmt.Errorf("failed to generate report: %v", err)
 		}
 		
-		fmt.Printf("Report generated and sent to %s\n", email)
+		fmt.Printf("Report generated successfully\n")
 		return nil
 	},
 }
@@ -445,7 +480,14 @@ var scheduleReportCmd = &cobra.Command{
 		schedule, _ := cmd.Flags().GetString("schedule")
 		email, _ := cmd.Flags().GetString("email")
 		
-		err := apiClient.ScheduleReport(reportType, schedule, email)
+		reportSchedule := &models.ReportSchedule{
+			Type:        reportType,
+			Schedule:    schedule,
+			Recipients:  []string{email},
+			IsEnabled:   true,
+		}
+		
+		err := apiClient.ScheduleReport(reportSchedule)
 		if err != nil {
 			return fmt.Errorf("failed to schedule report: %v", err)
 		}
@@ -476,7 +518,8 @@ var listReportsCmd = &cobra.Command{
 			fmt.Printf("ID: %d\n", r.ID)
 			fmt.Printf("Type: %s\n", r.Type)
 			fmt.Printf("Schedule: %s\n", r.Schedule)
-			fmt.Printf("Email: %s\n", r.Email)
+			fmt.Printf("Recipients: %s\n", strings.Join(r.Recipients, ", "))
+			fmt.Printf("Enabled: %v\n", r.IsEnabled)
 			fmt.Println("------------------")
 		}
 		
@@ -490,7 +533,7 @@ var deleteReportCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id, _ := cmd.Flags().GetInt("id")
 		
-		err := apiClient.DeleteScheduledReport(id)
+		err := apiClient.DeleteScheduledReport(fmt.Sprintf("%d", id))
 		if err != nil {
 			return fmt.Errorf("failed to delete report: %v", err)
 		}

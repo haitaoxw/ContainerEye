@@ -11,7 +11,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/containereye/internal/models"
+	"containereye/internal/models"
 )
 
 type Client struct {
