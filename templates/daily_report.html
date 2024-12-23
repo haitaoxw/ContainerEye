@@ -64,7 +64,7 @@
 <body>
     <div class="header">
         <h1>ContainerEye Daily Report</h1>
-        <p>Period: {{.StartTime.Format "2006-01-02 15:04:05"}} to {{.EndTime.Format "2006-01-02 15:04:05"}}</p>
+        <p>Period: {{.StartTime.Format "2006-01-02 15:04"}} to {{.EndTime.Format "2006-01-02 15:04"}}</p>
     </div>
 
     <div class="section">
@@ -97,7 +97,7 @@
                 <td>{{.RuleName}}</td>
                 <td>{{.Level}}</td>
                 <td>{{.AlertCount}}</td>
-                <td>{{range .TopTargets}}{{.}}, {{end}}</td>
+                <td>{{if .TopTargets}}{{join .TopTargets ", "}}{{else}}-{{end}}</td>
             </tr>
             {{end}}
         </table>
@@ -116,10 +116,10 @@
             </tr>
             {{range .TopContainers}}
             <tr>
-                <td>{{.ContainerName}}</td>
-                <td>{{printf "%.2f" .CpuAvg}}</td>
-                <td>{{printf "%.2f" .MemAvg}}</td>
-                <td>{{printf "%.2f" .DiskAvg}}</td>
+                <td>{{if .ContainerName}}{{.ContainerName}}{{else}}-{{end}}</td>
+                <td>{{printf "%.1f" .CpuAvg}}</td>
+                <td>{{printf "%.1f" .MemAvg}}</td>
+                <td>{{printf "%.1f" .DiskAvg}}</td>
                 <td>{{printf "%.2f" .NetAvg}}</td>
                 <td>{{.AlertCount}}</td>
             </tr>
@@ -138,8 +138,8 @@
     <script>
         // CPU Usage Trend
         var cpuData = {
-            x: [{{range .Trends.CpuTrend}}"{{.Timestamp.Format "2006-01-02 15:04:05"}}", {{end}}],
-            y: [{{range .Trends.CpuTrend}}{{.Value}}, {{end}}],
+            x: [{{range .Trends.CpuTrend}}"{{.Timestamp.Format "2006-01-02 15:04"}}", {{end}}],
+            y: [{{range .Trends.CpuTrend}}{{printf "%.1f" .Value}}, {{end}}],
             type: 'scatter',
             name: 'CPU Usage (%)'
         };
@@ -151,8 +151,8 @@
 
         // Memory Usage Trend
         var memData = {
-            x: [{{range .Trends.MemoryTrend}}"{{.Timestamp.Format "2006-01-02 15:04:05"}}", {{end}}],
-            y: [{{range .Trends.MemoryTrend}}{{.Value}}, {{end}}],
+            x: [{{range .Trends.MemoryTrend}}"{{.Timestamp.Format "2006-01-02 15:04"}}", {{end}}],
+            y: [{{range .Trends.MemoryTrend}}{{printf "%.1f" .Value}}, {{end}}],
             type: 'scatter',
             name: 'Memory Usage (%)'
         };
@@ -164,8 +164,8 @@
 
         // Disk Usage Trend
         var diskData = {
-            x: [{{range .Trends.DiskTrend}}"{{.Timestamp.Format "2006-01-02 15:04:05"}}", {{end}}],
-            y: [{{range .Trends.DiskTrend}}{{.Value}}, {{end}}],
+            x: [{{range .Trends.DiskTrend}}"{{.Timestamp.Format "2006-01-02 15:04"}}", {{end}}],
+            y: [{{range .Trends.DiskTrend}}{{printf "%.1f" .Value}}, {{end}}],
             type: 'scatter',
             name: 'Disk Usage (%)'
         };
@@ -177,8 +177,8 @@
 
         // Network Usage Trend
         var netData = {
-            x: [{{range .Trends.NetTrend}}"{{.Timestamp.Format "2006-01-02 15:04:05"}}", {{end}}],
-            y: [{{range .Trends.NetTrend}}{{.Value}}, {{end}}],
+            x: [{{range .Trends.NetTrend}}"{{.Timestamp.Format "2006-01-02 15:04"}}", {{end}}],
+            y: [{{range .Trends.NetTrend}}{{printf "%.2f" .Value}}, {{end}}],
             type: 'scatter',
             name: 'Network Usage (MB/s)'
         };

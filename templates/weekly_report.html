@@ -98,7 +98,7 @@
         <div class="trend-analysis">
             <h3>Alert Trend Analysis</h3>
             <p>Total Alerts: {{.AlertSummary.TotalAlerts}}</p>
-            <p>Average Alerts per Day: {{div .AlertSummary.TotalAlerts 7}}</p>
+            <p>Average Alerts per Day: {{printf "%.1f" (divf .AlertSummary.TotalAlerts 7.0)}}</p>
         </div>
 
         <h3>Most Active Alert Rules</h3>
@@ -114,7 +114,7 @@
                 <td>{{.RuleName}}</td>
                 <td>{{.Level}}</td>
                 <td>{{.AlertCount}}</td>
-                <td>{{range .TopTargets}}{{.}}, {{end}}</td>
+                <td>{{if .TopTargets}}{{join .TopTargets ", "}}{{else}}-{{end}}</td>
             </tr>
             {{end}}
         </table>
@@ -134,9 +134,9 @@
             {{range .TopContainers}}
             <tr>
                 <td>{{.ContainerName}}</td>
-                <td>{{printf "%.2f" .CpuAvg}}</td>
-                <td>{{printf "%.2f" .MemAvg}}</td>
-                <td>{{printf "%.2f" .DiskAvg}}</td>
+                <td>{{printf "%.1f" .CpuAvg}}</td>
+                <td>{{printf "%.1f" .MemAvg}}</td>
+                <td>{{printf "%.1f" .DiskAvg}}</td>
                 <td>{{printf "%.2f" .NetAvg}}</td>
                 <td>{{.AlertCount}}</td>
             </tr>
@@ -158,11 +158,11 @@
             <h3>Resource Optimization</h3>
             <ul>
                 {{range .TopContainers}}
-                {{if gt .CpuAvg 80.0}}
-                <li>Consider scaling {{.ContainerName}} horizontally due to high CPU usage ({{printf "%.2f" .CpuAvg}}%)</li>
+                {{if and (gt .CpuAvg 80.0) (ne .ContainerName "")}}
+                <li>Consider scaling {{.ContainerName}} horizontally due to high CPU usage ({{printf "%.1f" .CpuAvg}}%)</li>
                 {{end}}
-                {{if gt .MemAvg 80.0}}
-                <li>Review memory allocation for {{.ContainerName}} ({{printf "%.2f" .MemAvg}}% usage)</li>
+                {{if and (gt .MemAvg 80.0) (ne .ContainerName "")}}
+                <li>Review memory allocation for {{.ContainerName}} ({{printf "%.1f" .MemAvg}}% usage)</li>
                 {{end}}
                 {{end}}
             </ul>
@@ -170,7 +170,7 @@
             <h3>Alert Rule Tuning</h3>
             <ul>
                 {{range .AlertSummary.TopRules}}
-                {{if gt .AlertCount 100}}
+                {{if and (gt .AlertCount 100) (ne .RuleName "")}}
                 <li>Consider reviewing threshold for "{{.RuleName}}" ({{.AlertCount}} alerts this week)</li>
                 {{end}}
                 {{end}}
@@ -181,8 +181,8 @@
     <script>
         // CPU Usage Trend
         var cpuData = {
-            x: [{{range .Trends.CpuTrend}}"{{.Timestamp.Format "2006-01-02 15:04:05"}}", {{end}}],
-            y: [{{range .Trends.CpuTrend}}{{.Value}}, {{end}}],
+            x: [{{range .Trends.CpuTrend}}"{{.Timestamp.Format "2006-01-02 15:04"}}", {{end}}],
+            y: [{{range .Trends.CpuTrend}}{{printf "%.1f" .Value}}, {{end}}],
             type: 'scatter',
             name: 'CPU Usage (%)'
         };
@@ -194,8 +194,8 @@
 
         // Memory Usage Trend
         var memData = {
-            x: [{{range .Trends.MemoryTrend}}"{{.Timestamp.Format "2006-01-02 15:04:05"}}", {{end}}],
-            y: [{{range .Trends.MemoryTrend}}{{.Value}}, {{end}}],
+            x: [{{range .Trends.MemoryTrend}}"{{.Timestamp.Format "2006-01-02 15:04"}}", {{end}}],
+            y: [{{range .Trends.MemoryTrend}}{{printf "%.1f" .Value}}, {{end}}],
             type: 'scatter',
             name: 'Memory Usage (%)'
         };
@@ -207,8 +207,8 @@
 
         // Disk Usage Trend
         var diskData = {
-            x: [{{range .Trends.DiskTrend}}"{{.Timestamp.Format "2006-01-02 15:04:05"}}", {{end}}],
-            y: [{{range .Trends.DiskTrend}}{{.Value}}, {{end}}],
+            x: [{{range .Trends.DiskTrend}}"{{.Timestamp.Format "2006-01-02 15:04"}}", {{end}}],
+            y: [{{range .Trends.DiskTrend}}{{printf "%.1f" .Value}}, {{end}}],
             type: 'scatter',
             name: 'Disk Usage (%)'
         };
@@ -220,8 +220,8 @@
 
         // Network Usage Trend
         var netData = {
-            x: [{{range .Trends.NetTrend}}"{{.Timestamp.Format "2006-01-02 15:04:05"}}", {{end}}],
-            y: [{{range .Trends.NetTrend}}{{.Value}}, {{end}}],
+            x: [{{range .Trends.NetTrend}}"{{.Timestamp.Format "2006-01-02 15:04"}}", {{end}}],
+            y: [{{range .Trends.NetTrend}}{{printf "%.2f" .Value}}, {{end}}],
             type: 'scatter',
             name: 'Network Usage (MB/s)'
         };
